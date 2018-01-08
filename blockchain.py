@@ -99,11 +99,19 @@ class Blockchain:
             merged_chain[idx] = {
                 'index': merged_chain[idx]['index'],
                 'timestamp': merged_chain[idx]['timestamp'],
-                'transactions': self.removed_dup_txns(merged_chain[idx]['transactions'] + block['transactions']),
+                'transactions': merged_chain[idx]['transactions'] + block['transactions'],
                 'proof': merged_chain[idx]['proof'],
                 'previous_hash': merged_chain[idx]['previous_hash'],
             }
-        return merged_chain
+        return self.cleanup_chain(merged_chain)
+
+    def cleanup_chain(self, chain):
+        clean_chain = []
+        for block in chain:
+            txns = self.removed_dup_txns(block['transactions'])
+            block['transactions'] = txns
+            clean_chain.append(block)
+        return clean_chain
 
     def removed_dup_txns(self, transactions):
         seen = set()
@@ -147,10 +155,18 @@ class Blockchain:
         :param amount: Amount
         :return: The index of the Block that will hold this transaction
         """
+        txn_time = time()
         self.current_transactions.append({
             'sender': sender,
             'recipient': recipient,
             'amount': amount,
+            'timestamp': txn_time,
+            'txn_hash': self.hash({
+                'sender': sender,
+                'recipient': recipient,
+                'amount': amount,
+                'timestamp': txn_time
+            })
         })
 
         return self.last_block['index'] + 1
