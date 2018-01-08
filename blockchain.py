@@ -77,6 +77,7 @@ class Blockchain:
             if response.status_code == 200:
                 length = response.json()['length']
                 chain = response.json()['chain']
+                print(length)
 
                 # Check if the length is longer and the chain is valid
                 if length > max_length and self.valid_chain(chain):
@@ -85,10 +86,29 @@ class Blockchain:
 
         # Replace our chain if we discovered a new, valid chain longer than ours
         if new_chain:
-            self.chain = new_chain
+            self.chain = self.merge_chains(new_chain, self.chain)
             return True
 
         return False
+
+    def merge_chains(self, chain1, chain2):
+        print("merging chains")
+        merged_chain = chain1
+        for block in chain2:
+            merged_transactions = merged_chain[block['index']]['transactions'] + block['transactions']
+            merged_index = merged_chain[block['index']]['index']
+            merged_hash = merged_chain[block['index']]['previous_hash']
+            merged_proof = merged_chain[block['index']]['proof']
+            merged_timestamp = merged_chain[block['index']]['timestamp']
+            merged_block = {
+                'index': merged_index,
+                'timestamp': merged_timestamp,
+                'transactions': merged_transactions,
+                'proof': merged_proof,
+                'previous_hash': merged_hash,
+            }
+            merged_chain[block['index']] = merged_block
+        return merged_chain
 
     def new_block(self, proof, previous_hash):
         """
