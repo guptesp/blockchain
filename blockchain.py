@@ -80,7 +80,7 @@ class Blockchain:
                 print(length)
 
                 # Check if the length is longer and the chain is valid
-                if length > max_length and self.valid_chain(chain):
+                if length >= max_length and self.valid_chain(chain):
                     max_length = length
                     new_chain = chain
 
@@ -95,20 +95,25 @@ class Blockchain:
         print("merging chains")
         merged_chain = chain1
         for block in chain2:
-            merged_transactions = merged_chain[block['index']]['transactions'] + block['transactions']
-            merged_index = merged_chain[block['index']]['index']
-            merged_hash = merged_chain[block['index']]['previous_hash']
-            merged_proof = merged_chain[block['index']]['proof']
-            merged_timestamp = merged_chain[block['index']]['timestamp']
-            merged_block = {
-                'index': merged_index,
-                'timestamp': merged_timestamp,
-                'transactions': merged_transactions,
-                'proof': merged_proof,
-                'previous_hash': merged_hash,
+            idx = block['index'] - 1
+            merged_chain[idx] = {
+                'index': merged_chain[idx]['index'],
+                'timestamp': merged_chain[idx]['timestamp'],
+                'transactions': self.removed_dup_txns(merged_chain[idx]['transactions'] + block['transactions']),
+                'proof': merged_chain[idx]['proof'],
+                'previous_hash': merged_chain[idx]['previous_hash'],
             }
-            merged_chain[block['index']] = merged_block
         return merged_chain
+
+    def removed_dup_txns(self, transactions):
+        seen = set()
+        unique_txns = []
+        for txn in transactions:
+            txn_hash = self.hash(txn)
+            if txn_hash not in seen:
+                seen.add(txn_hash)
+                unique_txns.append(txn)
+        return unique_txns
 
     def new_block(self, proof, previous_hash):
         """
